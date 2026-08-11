@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#07110c" />
+    <meta name="description" content="足球、红楼梦与甄嬛传人物相似度猜谜。" />
+    <meta property="og:title" content="人物谜局｜猜人物" />
+    <meta property="og:description" content="选择一个世界，只看相似度，沿着人物关系找到答案。" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://yyyharmes.github.io/yyy/og-preview.png?v=17" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>人物谜局｜猜人物</title>
+    <link rel="stylesheet" href="./styles.css?v=17" />
+  </head>
+  <body data-game="home">
+    <div class="ambient" aria-hidden="true"></div>
+
+    <header class="site-header">
+      <button class="back-button" id="backBtn" type="button" hidden aria-label="返回主页">←</button>
+      <a class="brand" id="brandBtn" href="#" aria-label="人物谜局主页">
+        <span class="brand-orbit" aria-hidden="true"><i></i></span>
+        <span id="brandText">人物谜局</span>
+      </a>
+      <nav class="header-actions" id="gameActions" aria-label="页面操作" hidden>
+        <button class="quiet-button" id="howToPlayBtn" type="button">玩法</button>
+        <button class="settings-button" id="settingsBtn" type="button" aria-label="设置">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z"/><path d="m19.1 13.7 1.2 1.5-2 3.4-1.9-.3c-.5.4-1 .7-1.6.9l-.7 1.8h-4l-.7-1.8c-.6-.2-1.1-.5-1.6-.9l-1.9.3-2-3.4 1.2-1.5a7 7 0 0 1 0-1.8l-1.2-1.5 2-3.4 1.9.3c.5-.4 1-.7 1.6-.9l.7-1.8h4l.7 1.8c.6.2 1.1.5 1.6.9l1.9-.3 2 3.4-1.2 1.5a7 7 0 0 1 0 1.8Z"/></svg>
+          <span id="settingsLabel">设置</span>
+        </button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="home-view" id="homeView">
+        <div class="home-hero">
+          <p class="eyebrow"><span></span> CHARACTER RELATION PUZZLE</p>
+          <h1>选择一场<br><em>人物谜局</em></h1>
+        </div>
+        <div class="game-grid" aria-label="选择游戏">
+          <button class="game-card football-card" type="button" data-game-select="football">
+            <span class="card-index">01 / FOOTBALL</span>
+            <strong>猜足球运动员</strong>
+            <i>开始游戏 ↗</i>
+          </button>
+          <button class="game-card honglou-card" type="button" data-game-select="honglou">
+            <span class="card-index">02 / 红楼梦</span>
+            <strong>猜红楼人物</strong>
+            <i>开始游戏 ↗</i>
+          </button>
+          <button class="game-card zhenhuan-card" type="button" data-game-select="zhenhuan">
+            <span class="card-index">03 / 甄嬛传</span>
+            <strong>猜甄嬛传人物</strong>
+            <i>开始游戏 ↗</i>
+          </button>
+        </div>
+      </section>
+
+      <section class="game-view" id="gameView" hidden>
+        <section class="hero" aria-labelledby="pageTitle">
+          <p class="eyebrow"><span></span><b id="gameEyebrow">RELATION RADAR</b></p>
+          <h1 id="pageTitle">猜球星</h1>
+          <div class="game-stats" aria-label="本局数据">
+            <div><strong class="stat-value" id="attemptCount">0</strong><span class="stat-label" id="attemptLabel">已猜次数</span></div>
+            <span class="stat-divider"></span>
+            <div><strong class="stat-value" id="bestScore">—</strong><span class="stat-label" id="bestLabel">最高相似</span></div>
+          </div>
+        </section>
+
+        <section class="game-panel" aria-label="猜人物游戏">
+          <div class="panel-topline">
+            <span><i class="live-dot"></i><span id="roundStatus">等待第一次猜测</span></span>
+            <button class="surrender-button" id="revealBtn" type="button" disabled></button>
+          </div>
+
+          <div class="search-block">
+            <label for="playerInput" id="searchLabel">输入球员中文名</label>
+            <div class="search-wrap">
+              <span class="search-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.5"/><path d="m16 16 4.2 4.2"/></svg>
+              </span>
+              <input id="playerInput" type="search" autocomplete="off" />
+              <button id="guessBtn" type="button"><span id="guessLabel">猜测</span><b>↗</b></button>
+            </div>
+          </div>
+
+          <div class="result-area">
+            <article class="reveal-card" id="victoryCard" hidden></article>
+            <div class="empty-state" id="emptyState">
+              <div class="signal" aria-hidden="true"><span></span><i></i><b></b></div>
+              <h2 id="emptyTitle">从一个熟悉的名字开始</h2>
+            </div>
+            <div class="guess-list" id="guessList" aria-live="polite"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer><span>RELATION PUZZLE / 2026</span></footer>
+
+    <dialog id="howToDialog">
+      <button class="dialog-close" id="closeHowToBtn" type="button" aria-label="关闭">×</button>
+      <span class="dialog-kicker">HOW TO PLAY</span>
+      <h2 id="howTitle"></h2>
+      <p id="howCopy"></p>
+      <div class="rule-list" id="ruleList"></div>
+      <button class="dialog-primary" id="startBtn" type="button">开始挑战</button>
+    </dialog>
+
+    <dialog id="settingsDialog" class="settings-dialog">
+      <button class="dialog-close" id="closeSettingsBtn" type="button" aria-label="关闭">×</button>
+      <span class="dialog-kicker">SETTINGS</span>
+      <h2 id="settingsTitle">语言设置</h2>
+      <p id="settingsCopy">语言只影响足球游戏，切换后输入规则、提示与人物介绍会同步更新。</p>
+      <div class="language-options" role="group" aria-label="语言">
+        <button type="button" data-lang="zh">简体中文</button>
+        <button type="button" data-lang="en">English</button>
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./players-data.js?v=17"></script>
+    <script src="./story-data.js?v=17"></script>
+    <script src="./app.js?v=17" defer></script>
+  </body>
+</html>
