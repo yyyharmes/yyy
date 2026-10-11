@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>红海参谋 · 投放决策引擎</title>
-<meta name="description" content="输入预算、目标、候选品类，输出一页投放策略书：推荐品类、定价区间、预算分配、预期 ROI、行动清单。" />
+<meta name="description" content="输入预算、目标、候选品类，计算引擎跑等边际分配与定价模型，输出一页投放策略书，还能追问 AI 参谋为什么。" />
 <style>
 /* ===== 红海参谋 · 投放决策引擎 ===== */
 :root {
@@ -33,7 +33,7 @@ body {
 .page { max-width: 1060px; margin: 0 auto; padding: 36px 20px 48px; }
 
 /* ---- 头部 ---- */
-.page-head { margin-bottom: 26px; }
+.page-head { margin-bottom: 26px; position: relative; }
 .brand-row { display: flex; align-items: center; gap: 14px; }
 .brand-mark {
   width: 46px; height: 46px; display: grid; place-items: center; flex: none;
@@ -239,6 +239,82 @@ body {
   .v-head { font-size: 22px; }
   .fstep { grid-template-columns: 78px 1fr auto; }
 }
+/* ===== ② 计算引擎（可展开审计） ===== */
+.sec-engine { margin-bottom: 22px; }
+.sec-engine summary { list-style: none; cursor: pointer; }
+.sec-engine summary::-webkit-details-marker { display: none; }
+.sec-engine summary::after { content: '▾'; margin-left: auto; color: #c9a9b1; font-size: 14px; transition: transform .2s; }
+.sec-engine[open] summary::after { transform: rotate(180deg); }
+.sec-engine[open] summary { margin-bottom: 14px; }
+.eng-mods { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-bottom: 6px; }
+.eng-mod { padding: 10px 12px; background: #faf5f7; border-radius: 10px; border: 1px solid #f0e2e6; }
+.eng-mod b { display: block; font-size: 13px; margin-bottom: 3px; }
+.eng-mod span { font-size: 12px; color: #95808a; }
+.eng-h { font-size: 13px; margin: 16px 0 8px; color: #7a5f68; }
+.db-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid #f0e2e6; }
+table.db { width: 100%; border-collapse: collapse; font-size: 12px; background: #fff; }
+table.db th, table.db td { padding: 7px 10px; border-bottom: 1px solid #f4e9ec; text-align: right; white-space: nowrap; }
+table.db th:first-child, table.db td:first-child { text-align: left; font-weight: 600; }
+table.db th { color: #8a6b74; background: #faf5f7; position: sticky; top: 0; }
+table.db tr:last-child td { border-bottom: 0; }
+.trace-line { font-size: 13px; padding: 7px 10px; border-left: 3px solid #f3d9dd; background: #fdf8f9; margin-bottom: 6px; border-radius: 0 8px 8px 0; line-height: 1.55; }
+.trace-line b { color: #c8284f; }
+
+/* ===== ③ 输出层新增 ===== */
+.sec-out .sec-title { display: flex; align-items: center; gap: 10px; }
+.mini-btn { margin-left: auto; font-size: 12px; padding: 5px 12px; border: 1px solid #e8ccd2; background: #fff; color: #b02840; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.mini-btn:hover { background: #fff0f2; border-color: #d8a8b3; }
+.head-link { position: absolute; top: 18px; right: 18px; font-size: 12px; padding: 6px 12px; border: 1px solid #eee0e4; background: #fff; color: #9a7d85; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.head-link:hover { color: #c8284f; border-color: #e0b8c0; }
+.cmp-note { margin-top: 12px; font-size: 12px; color: #9a7d85; line-height: 1.55; background: #fdf8f9; padding: 8px 10px; border-radius: 8px; }
+.cmp-note b { color: #c8284f; }
+.sim { margin-top: 12px; padding: 12px 14px; background: #fff8f9; border: 1px solid #f3dde2; border-radius: 12px; }
+.sim-head { font-size: 13px; font-weight: 700; margin-bottom: 9px; color: #8a4a58; }
+.sim-dims { display: flex; gap: 6px; margin-bottom: 8px; }
+.sim-dims button { font-size: 12px; padding: 4px 12px; border-radius: 999px; border: 1px solid #e8d3d8; background: #fff; color: #a58891; cursor: pointer; }
+.sim-dims button.on { background: #e5484d; color: #fff; border-color: #e5484d; }
+.sim input[type=range] { width: 100%; accent-color: #e5484d; }
+.sim-scale { display: flex; justify-content: space-between; font-size: 11px; color: #c9a2ab; margin: 2px 2px 8px; }
+.sim-out { font-size: 14px; line-height: 1.6; }
+.sim-out b { color: #c8284f; }
+.sim-out .flip { display: inline-block; margin-left: 8px; padding: 2px 9px; background: #fff; border: 1px solid #e5484d; color: #e5484d; border-radius: 999px; font-size: 12px; font-weight: 700; font-style: normal; animation: flipPulse 1s infinite alternate; }
+@keyframes flipPulse { from { opacity: .6; } to { opacity: 1; } }
+
+/* ===== ④ AI 参谋 ===== */
+.sec-ask { margin-top: 26px; }
+.ask-card { display: block; }
+.chat-log { min-height: 40px; max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; padding-right: 4px; }
+.msg { max-width: 92%; padding: 10px 14px; border-radius: 13px; font-size: 14px; line-height: 1.65; }
+.msg.user { align-self: flex-end; background: #fff0f2; border: 1px solid #ffdfe4; }
+.msg.ai { align-self: flex-start; background: #f8f7fa; border: 1px solid #e9e6f0; }
+.msg.ai b { color: #c8284f; }
+.msg.ai i.think { color: #a58891; font-style: italic; }
+.msg.ai .src { display: block; margin-top: 6px; font-size: 11px; color: #b3a0a6; }
+.chat-sug { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.chat-sug button { font-size: 12px; padding: 5px 12px; border-radius: 999px; background: #fff; border: 1px dashed #d8c0c6; color: #a55; cursor: pointer; }
+.chat-sug button:hover { border-color: #e5484d; color: #e5484d; border-style: solid; }
+.chat-bar { display: flex; gap: 8px; }
+.chat-bar input { flex: 1; padding: 11px 14px; border: 1px solid #e3d5d9; border-radius: 11px; font-size: 14px; outline: none; }
+.chat-bar input:focus { border-color: #e5484d; }
+.chat-bar button { padding: 0 24px; background: #e5484d; color: #fff; border: 0; border-radius: 11px; font-weight: 700; font-size: 14px; cursor: pointer; }
+.chat-bar button:hover { background: #d13a3f; }
+.llm-set { margin-top: 14px; border-top: 1px dashed #ecdbe0; padding-top: 10px; }
+.llm-set summary { font-size: 12px; color: #a58891; cursor: pointer; margin-bottom: 2px; }
+.llm-form label { display: block; font-size: 12px; color: #7a5f68; margin: 10px 0 2px; }
+.llm-form em { font-style: normal; color: #bda6ad; margin-left: 4px; }
+.llm-form input { display: block; width: 100%; box-sizing: border-box; margin-top: 5px; padding: 9px 11px; border: 1px solid #e3d5d9; border-radius: 9px; font-size: 13px; }
+.llm-form button { margin-top: 12px; padding: 8px 18px; background: #3b2f34; color: #fff; border: 0; border-radius: 9px; cursor: pointer; font-size: 13px; }
+.llm-note { font-size: 11px; color: #b09a9f; margin-top: 10px; line-height: 1.6; }
+
+/* ===== toast ===== */
+#toast { position: fixed; left: 50%; bottom: 30px; transform: translate(-50%, 20px); background: #2b2024; color: #fff; padding: 10px 22px; border-radius: 999px; font-size: 13px; opacity: 0; pointer-events: none; transition: all .25s; z-index: 99; box-shadow: 0 6px 24px rgba(0,0,0,.18); }
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+@media (max-width: 560px) {
+  .head-link { position: static; margin-top: 10px; }
+  .page-head { position: static; }
+}
+
 </style>
 </head>
 <body>
@@ -249,9 +325,10 @@ body {
       <div class="brand-mark">红</div>
       <div class="brand-txt">
         <h1>红海参谋 · 投放决策引擎</h1>
-        <p>输入层 → 计算引擎 → 一页投放策略书</p>
+        <p>输入层 → 计算引擎 → 一页策略书 → AI 参谋</p>
       </div>
     </div>
+    <button type="button" id="shareBtn" class="head-link">🔗 复制本方案链接</button>
   </header>
 
   <!-- ① 输入层 -->
@@ -290,10 +367,50 @@ body {
     </div>
   </section>
 
+  <!-- ② 计算引擎（可展开审计） -->
+  <details class="sec sec-engine" id="engineBox">
+    <summary class="sec-title"><span class="sec-no">②</span> 计算引擎 · 点开审计全部中间值</summary>
+    <div class="card">
+      <div class="eng-mods">
+        <div class="eng-mod"><b>需求弹性评估</b><span>供需比 heat/comp + 价格敏感度 ε</span></div>
+        <div class="eng-mod"><b>定价引擎</b><span>盈亏平衡价 = 成本 ÷ (1−扣点)</span></div>
+        <div class="eng-mod"><b>等边际预算分配</b><span>MROI(A)=MROI(B)，二分解 λ</span></div>
+        <div class="eng-mod"><b>ROI 回本预测</b><span>回报积分 cap·q·ln(1+b/cap)</span></div>
+      </div>
+      <h4 class="eng-h">品类数据库 · 12 类（示意估算值）</h4>
+      <div class="db-wrap"><table class="db" id="dbTable"></table></div>
+      <h4 class="eng-h">本轮计算过程（实时）</h4>
+      <div id="calcTrace"></div>
+    </div>
+  </details>
+
   <!-- ③ 输出层 -->
   <section class="sec sec-out">
-    <div class="sec-title"><span class="sec-no">②</span> 输出层 · 一页投放策略书</div>
+    <div class="sec-title"><span class="sec-no">③</span> 输出层 · 一页投放策略书<button type="button" id="copyBtn" class="mini-btn">复制策略书文本</button></div>
     <div id="output"></div>
+  </section>
+
+  <!-- ④ AI 参谋 -->
+  <section class="sec sec-ask">
+    <div class="sec-title"><span class="sec-no">④</span> AI 参谋 · 追问为什么</div>
+    <div class="card ask-card">
+      <div class="chat-log" id="chatLog"></div>
+      <div class="chat-sug" id="chatSug"></div>
+      <div class="chat-bar">
+        <input type="text" id="chatInput" placeholder="例如：为什么美妆拿这么多预算？预算砍半会怎样？" />
+        <button type="button" id="chatSend">问</button>
+      </div>
+      <details class="llm-set" id="llmSet">
+        <summary>接真 LLM（可选 · 豆包 / 任意 OpenAI 兼容接口）</summary>
+        <div class="llm-form">
+          <label>接口地址<em>OpenAI 兼容 /chat/completions</em><input type="text" id="llmUrl" placeholder="https://ark.cn-beijing.volces.com/api/v3/chat/completions" /></label>
+          <label>API Key<input type="password" id="llmKey" placeholder="未填则用本地解读引擎" /></label>
+          <label>模型<input type="text" id="llmModel" placeholder="如 doubao-1.5-pro-32k" /></label>
+          <button type="button" id="llmSave">保存配置</button>
+          <p class="llm-note">Key 只存在你浏览器 localStorage，不经过任何服务器。未配置时由本地规则引擎作答（同样实时引用计算引擎的数字）。浏览器直连若遇跨域/鉴权失败，自动回退本地引擎。</p>
+        </div>
+      </details>
+    </div>
   </section>
 
   <footer class="page-foot">
@@ -301,10 +418,12 @@ body {
   </footer>
 </main>
 
+<div id="toast"></div>
 <script>
-/* ===== 红海参谋 · 计算引擎 =====
+/* ===== 红海参谋 · 计算引擎 + AI 参谋 =====
  * 内置品类数据库（12 类，示意估算值，均已显式标注）
  * 算法：需求弹性 / 盈亏平衡定价 / 等边际预算分配（边际收益递减）/ ROI 回本预测
+ * 交互：波动模拟 / URL 状态分享 / 策略书导出 / AI 参谋问答（本地规则引擎，可选接真 LLM）
  */
 (function () {
   'use strict';
@@ -335,6 +454,12 @@ body {
 
   /* ---------- 状态 ---------- */
   var state = { budget: 30000, goal: 'sell', cats: ['美妆护肤', '家居好物', '宠物用品'] };
+  var simState = { dim: 'cvr', pct: 0 };
+  var SIM_DIMS = [
+    { k: 'cvr', n: '转化率' },
+    { k: 'price', n: '客单价' },
+    { k: 'budget', n: '预算' }
+  ];
 
   /* ---------- 工具 ---------- */
   function $(id) { return document.getElementById(id); }
@@ -351,6 +476,26 @@ body {
     return Math.round(x).toLocaleString();
   }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function toast(msg) {
+    var t = $('toast');
+    if (!t) return;
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast._h);
+    toast._h = setTimeout(function () { t.classList.remove('show'); }, 1800);
+  }
+  function copyText(txt, okMsg) {
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); toast(okMsg); } catch (e) { toast('复制失败，手动选择文本吧'); }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function () { toast(okMsg); }, fallback);
+    } else fallback();
+  }
 
   /* ---------- 计算引擎 ---------- */
   function byName(n) { for (var i = 0; i < DB.length; i++) if (DB[i].name === n) return DB[i]; return null; }
@@ -365,8 +510,8 @@ body {
   // 等边际分配：解 MROI_i(b_i) = q_i / (1 + b_i/cap_i) = λ，Σb_i = budget
   // 每个入选品类先保底 12%「探索预算」（避免数据不足就全砍），其余按等边际原则分
   // 回报积分：value_i = cap_i · q_i · ln(1 + b_i/cap_i)
-  function allocate(list, budget) {
-    var qs = list.map(function (c) { return goalQ(c, state.goal); });
+  function allocate(list, budget, qfn) {
+    var qs = list.map(function (c) { return qfn(c); });
     var caps = list.map(function (c) { return c.cap; });
     var n = list.length;
     if (n === 0) return { rows: [], lambda: 0 };
@@ -402,23 +547,34 @@ body {
     return { rows: rows, lambda: lam_ };
   }
 
-  function compute() {
+  // opts: { goal, budgetBias, cvrBias, priceBias } —— 波动模拟 / 反事实问答共用
+  function compute(opts) {
+    opts = opts || {};
     var budget = Math.max(100, parseFloat($('f_budget').value) || 0);
-    var goal = state.goal;
+    if (opts.budgetBias) budget = Math.max(100, budget * (1 + opts.budgetBias));
+    var goal = opts.goal || state.goal;
+    var cvrB = opts.cvrBias || 0, prB = opts.priceBias || 0;
     var list = state.cats.map(byName).filter(Boolean);
     if (!list.length || budget < 100) return null;
 
-    var alloc = allocate(list, budget);
+    var qfn = function (c) {
+      var q = goalQ(c, goal);
+      var m = 1;
+      if (cvrB) m *= (1 + cvrB);                                // 转化率全线波动 → 回报同步
+      if (prB) m *= (1 + prB * (1 - c.sens / 12));              // 客单价波动，按弹性 ε 折损需求
+      return q * m;
+    };
+    var alloc = allocate(list, budget, qfn);
     var rows = alloc.rows;
     var totalValue = rows.reduce(function (a, r) { return a + r.value; }, 0);
     var totalB = rows.reduce(function (a, r) { return a + r.b; }, 0);
     var roi = totalB > 0 ? totalValue / totalB : 0;
+    var pf = 1 + prB, cf = 1 + cvrB;
 
     // 每个品类综合评分（0-100，示意）
     rows.forEach(function (r) {
       var SR = r.cat.heat / r.cat.comp;
       var srScore = clamp((SR - 0.85) * 2.22, 0, 1) * 100;
-      var goal = state.goal;
       var fit = goal === 'sell' ? r.cat.fits.sell : goal === 'fans' ? r.cat.fits.fans : r.cat.fits.brand;
       var fitScore = fit * 10;
       var qScore = clamp((r.q - 1.2) / 1.4, 0, 1) * 100;
@@ -431,13 +587,13 @@ body {
     var top = rows[0];
 
     // 目标口径的产出
-    var out = { goal: state.goal, budget: budget, rows: rows, top: top, roi: roi, lambda: alloc.lambda };
+    var out = { goal: goal, budget: budget, rows: rows, top: top, roi: roi, lambda: alloc.lambda };
     if (goal === 'sell') {
       out.gmv = rows.reduce(function (a, r) { return a + r.value / r.cat.margin; }, 0);
-      out.orders = rows.reduce(function (a, r) { return a + (r.value / r.cat.margin) / r.cat.price; }, 0);
+      out.orders = rows.reduce(function (a, r) { return a + (r.value / r.cat.margin) / (r.cat.price * pf); }, 0);
       out.expo = rows.reduce(function (a, r) {
-        var orders = (r.value / r.cat.margin) / r.cat.price;
-        return a + orders / (r.cat.cvr * r.cat.ctr);
+        var orders = (r.value / r.cat.margin) / (r.cat.price * pf);
+        return a + orders / (r.cat.cvr * cf * r.cat.ctr);
       }, 0);
     } else if (goal === 'fans') {
       out.fans = totalValue / 2.2;
@@ -465,7 +621,7 @@ body {
     // 定价（带货 & 主推品类）
     if (goal === 'sell') {
       var c = top.cat;
-      var cost = c.price * c.costRatio;
+      var cost = c.price * c.costRatio * pf;
       var bep = cost / (1 - c.fee);
       out.pricing = {
         cat: c, cost: cost, bep: bep,
@@ -482,6 +638,12 @@ body {
     if (roi >= 1.3) return 'v-ok';
     if (roi >= 1.0) return 'v-mid';
     return '';
+  }
+  function shortVerdict(roi, goal) {
+    if (goal !== 'sell') return roi >= 0.7 ? '可行 ✅' : '谨慎 ⚠️';
+    if (roi >= 1.3) return '可行 ✅';
+    if (roi >= 1.0) return '谨慎 ⚠️';
+    return '不可行 ✋';
   }
   function verdictText(o) {
     var t = o.top.cat.name;
@@ -524,7 +686,7 @@ body {
       '</div></div>';
   }
   function renderCompare(o) {
-    return o.rows.map(function (r, i) {
+    var h = o.rows.map(function (r, i) {
       var cls = i === 0 ? 'g' : r.score >= 55 ? 'm' : 'r';
       var tag = i === 0 ? '主推' : r.score >= 55 ? '搭配' : '不建议重仓';
       return '<div class="cmp-row">' +
@@ -533,6 +695,8 @@ body {
         '<div class="cmp-sub">综合分 ' + r.score + ' · 供需比 ' + r.SR.toFixed(2) + ' · 预算 ¥' + fmtWan(r.b) + '（' + Math.round(r.b / o.budget * 100) + '%）</div></div>' +
         '<div class="cmp-tag ' + cls + '">' + tag + '</div></div>';
     }).join('');
+    h += '<p class="cmp-note">口径说明：<b>主推 = 预算分配最多的品类</b>（等边际原则，看容量与目标适配）；综合分只是「值不值得进候选」的参考排名。所以可能出现综合分更高、但钱拿得少的品类——它容量小，吃不下更多预算，硬塞过去边际回报会掉。</p>';
+    return h;
   }
   function renderAlloc(o) {
     var stack = o.rows.map(function (r, i) {
@@ -620,21 +784,76 @@ body {
       return '<li><span class="ck">✓</span><span>' + t + '</span></li>';
     }).join('') + '</ul>';
   }
-  function renderRisk(o) {
+
+  /* ---------- 波动模拟（敏感性分析 · 交互版） ---------- */
+  function renderSens(o) {
     var pos = o.goal === 'sell' ? clamp((o.roi / 2.5) * 100, 3, 97) : clamp(o.risk === '低' ? 15 : o.risk === '中' ? 50 : 85, 3, 97);
     var label = o.goal === 'sell'
       ? ('风险等级：' + o.risk + '。主要敏感项：' + (o.risk === '高' ? '竞争强度和内容饱和度都高，转化稍掉 ROI 就破 1。' : '参数中等，抗波动能力一般。'))
       : ('内容易沉风险：' + o.risk + '（品类内容饱和度决定）。');
-    return '<div class="sens-bar"><span class="pin" style="left:' + pos + '%"></span></div>' +
-      '<div class="plain">' + esc(label) + ' 预算、转化率、客单价任意一项波动 ±20%，结论可能反转——改上面的输入立刻能看到。</div>';
+    var dims = SIM_DIMS.map(function (d) {
+      return '<button type="button" data-d="' + d.k + '"' + (simState.dim === d.k ? ' class="on"' : '') + '>' + d.n + (d.k === 'cvr' ? ' ×' : '') + '</button>';
+    }).join('');
+    var h = '<div class="sens-bar"><span class="pin" style="left:' + pos + '%"></span></div>' +
+      '<div class="plain">' + esc(label) + ' 预算、转化率、客单价任意一项波动 ±20% 结论可能反转——用下面的滑块直接模拟。</div>' +
+      '<div class="sim">' +
+      '<div class="sim-head">波动模拟 · 拖动看结论会不会反转</div>' +
+      '<div class="sim-dims">' + dims + '</div>' +
+      '<input type="range" id="simRange" min="-20" max="20" step="5" value="' + Math.round(simState.pct * 100) + '" />' +
+      '<div class="sim-scale"><span>-20%</span><span>基准</span><span>+20%</span></div>' +
+      '<div class="sim-out" id="simOut"></div>' +
+      '</div>';
+    return h;
+  }
+  function bindSim(base) {
+    var range = $('simRange');
+    if (!range) return;
+    function dimName(k) { for (var i = 0; i < SIM_DIMS.length; i++) if (SIM_DIMS[i].k === k) return SIM_DIMS[i].n; return k; }
+    function update() {
+      var pct = (+range.value) / 100;
+      simState.pct = pct;
+      var opt = {};
+      if (simState.dim === 'cvr') opt.cvrBias = pct;
+      else if (simState.dim === 'price') opt.priceBias = pct;
+      else opt.budgetBias = pct;
+      var so = compute(opt);
+      var el = $('simOut');
+      if (!so) { el.innerHTML = '—'; return; }
+      var label = so.goal === 'sell' ? 'ROI' : '投产比';
+      var d = so.roi - base.roi;
+      var arrow = d > 0.001 ? '↑' : d < -0.001 ? '↓' : '→';
+      var pctTxt = Math.round(pct * 100);
+      var flip = vClass(so.roi, so.goal) !== vClass(base.roi, base.goal);
+      var extra = '';
+      if (so.goal === 'sell') extra = ' · GMV ¥' + fmtWan(so.gmv);
+      else if (so.goal === 'fans') extra = ' · 月涨粉 ' + fmtNum(so.fans);
+      el.innerHTML = '<b>' + dimName(simState.dim) + (pctTxt >= 0 ? ' +' : ' ') + pctTxt + '%</b> → ' + label + ' ' +
+        so.roi.toFixed(2) + '（基准 ' + base.roi.toFixed(2) + ' · ' + arrow + Math.abs(d).toFixed(2) + '）' + extra +
+        ' → ' + shortVerdict(so.roi, so.goal) +
+        (flip ? ' <em class="flip">结论反转！</em>' : '');
+    }
+    range.addEventListener('input', update);
+    document.querySelectorAll('.sim-dims button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        simState.dim = b.dataset.d;
+        document.querySelectorAll('.sim-dims button').forEach(function (x) { x.classList.toggle('on', x === b); });
+        range.value = 0;
+        update();
+      });
+    });
+    update();
   }
 
+  /* ---------- 主渲染 ---------- */
   function render() {
     var o = compute();
     var out = $('output');
     if (!o) {
       out.innerHTML = '<div class="out-empty">选至少 1 个候选品类、填个正经预算（≥ ¥100），策略书马上出来。</div>';
-      renderTrace(null); return;
+      renderTrace(null);
+      renderChatSug(null);
+      updateURL();
+      return;
     }
     var html = renderVerdict(o);
     html += '<div class="out-grid">';
@@ -645,11 +864,14 @@ body {
     } else {
       html += '<div class="out-card"><h3><span class="tagmini">转化路径</span>' + (o.goal === 'fans' ? '涨粉成本账（引流口径）' : '声量成本账（品牌口径）') + '</h3>' + renderBenchmark(o) + '</div>';
     }
-    html += '<div class="out-card"><h3><span class="tagmini">预期 ROI</span>预估账本 · 每行配大白话</h3>' + renderFunnel(o) + renderRisk(o) + '</div>';
+    html += '<div class="out-card"><h3><span class="tagmini">预期 ROI</span>预估账本 + 波动模拟</h3>' + renderFunnel(o) + renderSens(o) + '</div>';
     html += '<div class="out-card wide"><h3><span class="tagmini">行动清单</span>照着做就行</h3>' + renderTodo(o) + '</div>';
     html += '</div>';
     out.innerHTML = html;
     renderTrace(o);
+    bindSim(o);
+    renderChatSug(o);
+    updateURL();
   }
 
   /* ---------- 计算过程透明化 ---------- */
@@ -677,6 +899,265 @@ body {
       h += '<tr><td>' + c.name + '</td><td>' + c.heat + '</td><td>' + c.comp + '</td><td>' + c.sat + '</td><td>' + c.q.toFixed(1) + '</td><td>¥' + fmtWan(c.cap) + '</td><td>¥' + c.price + '</td><td>' + Math.round(c.margin * 100) + '%</td><td>' + Math.round(c.fee * 100) + '%</td><td>' + (c.cvr * 100).toFixed(1) + '%</td><td>' + Math.round(c.ret * 100) + '%</td><td>ε=' + c.sens + '</td></tr>';
     });
     $('dbTable').innerHTML = h;
+  }
+
+  /* ---------- URL 状态（分享 / 刷新不丢） ---------- */
+  function parseURL() {
+    var p;
+    try { p = new URLSearchParams(location.search); } catch (e) { return; }
+    var b = parseInt(p.get('b'), 10);
+    if (b >= 100 && b <= 10000000) state.budget = b;
+    var g = p.get('g');
+    if (g === 'sell' || g === 'fans' || g === 'brand') state.goal = g;
+    var c = (p.get('c') || '').split(',').filter(function (n) { return !!n && byName(n); });
+    if (c.length) state.cats = c.slice(0, 4);
+  }
+  function updateURL() {
+    var q = '?b=' + Math.round(state.budget) + '&g=' + state.goal +
+      '&c=' + state.cats.map(encodeURIComponent).join(',');
+    try { history.replaceState(null, '', q); } catch (e) {}
+  }
+  function syncUIFromState() {
+    $('f_budget').value = state.budget;
+    var v = Math.round(state.budget);
+    document.querySelectorAll('.preset').forEach(function (p) {
+      p.classList.toggle('on', parseInt(p.dataset.v, 10) === v);
+    });
+    document.querySelectorAll('#goalSeg .seg-btn').forEach(function (b) {
+      b.classList.toggle('on', b.dataset.goal === state.goal);
+    });
+    $('goalNote').textContent = GOAL_NOTE[state.goal];
+  }
+
+  /* ---------- 策略书导出 ---------- */
+  function reportText(o) {
+    var L = [];
+    L.push('红海参谋 · 一页投放策略书');
+    L.push('（数据为示意估算，不构成投资建议）');
+    L.push('');
+    L.push('【结论】' + headText(o));
+    L.push(verdictText(o));
+    L.push('');
+    L.push('【输入】月预算 ¥' + fmtWan(o.budget) + ' · 目标：' + (o.goal === 'sell' ? '带货变现' : o.goal === 'fans' ? '涨粉引流' : '品牌声量') + ' · 候选：' + o.rows.map(function (r) { return r.cat.name; }).join('、'));
+    L.push('');
+    L.push('【品类对比与预算分配】（主推 = 预算分配最多，等边际原则）');
+    o.rows.forEach(function (r, i) {
+      L.push((i === 0 ? '★主推 ' : '  ') + r.cat.name + '：综合分 ' + r.score + ' · 预算 ¥' + fmtWan(r.b) + '（' + Math.round(r.b / o.budget * 100) + '%）· 预期回报 ¥' + fmtWan(r.value));
+    });
+    L.push('拉平后的边际回报 λ = ' + (o.lambda || 0).toFixed(2));
+    L.push('');
+    if (o.goal === 'sell' && o.pricing) {
+      L.push('【定价（' + o.pricing.cat.name + '）】建议 ¥' + Math.round(o.pricing.lo) + '–' + Math.round(o.pricing.hi) + '，盈亏平衡价 ¥' + Math.round(o.pricing.bep) + '（低于即白干）');
+      L.push('');
+    }
+    L.push('【预估账本】');
+    L.push('ROI ' + o.roi.toFixed(2) + (o.goal === 'sell' ? ' · 预估月 GMV ¥' + fmtWan(o.gmv) + ' · ' + fmtNum(o.orders) + ' 单 · ' + o.payback : o.goal === 'fans' ? ' · 月涨粉 ' + fmtNum(o.fans) + '（¥2.2/粉 示意）' : ' · 月曝光 ' + fmtNum(o.expo) + '（¥20/千次 示意）'));
+    L.push('风险等级：' + o.risk);
+    L.push('');
+    L.push('【行动清单】');
+    L.push('1. 第 1 周拿 20% 预算（¥' + fmtWan(o.budget * 0.2) + '）投 4–6 篇「' + o.top.cat.form.split('、')[0] + '」测数据');
+    if (o.goal === 'sell' && o.pricing) L.push('2. 卖价锚 ¥' + Math.round(o.pricing.lo) + '–' + Math.round(o.pricing.hi) + '，低于 ¥' + Math.round(o.pricing.bep) + ' 不卖');
+    L.push('3. 每 2 周' + (o.rows.length > 1 ? '按等边际原则重分预算' : '复算 ROI') + '，砍掉回报最差的');
+    L.push('4. ' + o.top.cat.name + '退货率约 ' + Math.round(o.top.cat.ret * 100) + '%，详情页管住预期');
+    L.push('');
+    L.push('分享链接：' + location.origin + location.pathname + '?b=' + Math.round(o.budget) + '&g=' + state.goal + '&c=' + state.cats.map(encodeURIComponent).join(','));
+    return L.join('\n');
+  }
+
+  /* ---------- AI 参谋（本地规则引擎 + 可选真 LLM） ---------- */
+  var LLM_KEY = 'honghai_llm_conf';
+  function llmConf() {
+    try { return JSON.parse(localStorage.getItem(LLM_KEY) || 'null'); } catch (e) { return null; }
+  }
+  function addMsg(role, html) {
+    var log = $('chatLog');
+    var d = document.createElement('div');
+    d.className = 'msg ' + role;
+    d.innerHTML = html;
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+    return d;
+  }
+  function renderChatSug(o) {
+    var el = $('chatSug');
+    if (!el) return;
+    var sug;
+    if (!o) sug = ['先选好品类和预算，再来问我'];
+    else sug = [
+      '为什么' + o.top.cat.name + '拿这么多预算？',
+      '预算砍半会怎样？',
+      '结论什么情况下反转？',
+      '这个方案最大的风险是什么？'
+    ];
+    el.innerHTML = '';
+    sug.forEach(function (s) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = s;
+      b.addEventListener('click', function () { ask(s); });
+      el.appendChild(b);
+    });
+  }
+
+  function goalName(g) { return g === 'sell' ? '带货变现' : g === 'fans' ? '涨粉引流' : '品牌声量'; }
+
+  // 反事实：预算变动后重算对比
+  function ansBudget(o, f) {
+    var so = compute({ budgetBias: f });
+    if (!so) return '先检查输入再问我。';
+    var label = o.goal === 'sell' ? 'ROI' : '投产比';
+    var d = so.roi - o.roi;
+    var cut = f < 0;
+    var head = '重算完了：预算从 ¥' + fmtWan(o.budget) + (cut ? ' 砍到' : ' 加到') + ' ¥' + fmtWan(so.budget) +
+      '，' + label + ' 从 ' + o.roi.toFixed(2) + ' 变 ' + so.roi.toFixed(2) +
+      '（' + (d >= 0 ? '↑' : '↓') + Math.abs(d).toFixed(2) + '）。';
+    var why = cut
+      ? '为什么单位回报反而变高？边际递减在反向起作用——钱少了，都集中在回报最高的区间。但盘子也小了：'
+      : '为什么单位回报在掉？多出来的预算只能吃品类的容量上限（边际递减），钱越多效率越摊薄：';
+    var size = '';
+    if (so.goal === 'sell') size = '预估月 GMV 从 ¥' + fmtWan(o.gmv) + ' 变 ¥' + fmtWan(so.gmv) + '、' + fmtNum(so.orders) + ' 单。';
+    else if (so.goal === 'fans') size = '预估月涨粉从 ' + fmtNum(o.fans) + ' 变 ' + fmtNum(so.fans) + '。';
+    else size = '预估月曝光从 ' + fmtNum(o.expo) + ' 变 ' + fmtNum(so.expo) + '。';
+    return head + why + size + ' 模拟结论：' + shortVerdict(so.roi, so.goal) + '。主推仍是「' + so.top.cat.name + '」。';
+  }
+  function ansWhyAlloc(o) {
+    var top = o.top.cat;
+    var parts = o.rows.map(function (r) {
+      return r.cat.name + '（q=' + r.q.toFixed(2) + '，容量 ¥' + fmtWan(r.cat.cap) + ' → 拿 ' + Math.round(r.b / o.budget * 100) + '%）';
+    }).join('；');
+    return '分钱不是拍脑袋，是<b>等边际原则</b>：一直把钱加给「再投 1 元回报最高」的品类，直到大家拉平为止。本轮拉平后的 λ=' + o.lambda.toFixed(2) + '——每个入选品类再投 1 元的回报都等于它。<br>' +
+      '「' + top.name + '」拿大头（' + Math.round(top.b / o.budget * 100) + '%）的直接原因：<b>容量大（cap=¥' + fmtWan(top.cap) + '，饱和慢）</b>，且「' + goalName(o.goal) + '」适配度高（fit=' + top.fit + '/10）。<br>' +
+      '明细：' + esc(parts) + '。<br>另外每个入选品类先保底 12% 探索预算——防止示意数据有偏差就一把全押。';
+  }
+  function ansFlip(o) {
+    var s1 = compute({ cvrBias: -0.2 });
+    var s2 = compute({ priceBias: -0.2 });
+    var label = o.goal === 'sell' ? 'ROI' : '投产比';
+    var h = '我把两个最脆的变量各压 -20% 重算了：<br>基准 ' + label + ' ' + o.roi.toFixed(2) + '（' + shortVerdict(o.roi, o.goal) + '）';
+    if (s1) h += '；<b>转化率 -20% → ' + s1.roi.toFixed(2) + '（' + shortVerdict(s1.roi, s1.goal) + '）</b>';
+    if (s2) h += '；<b>客单价 -20% → ' + s2.roi.toFixed(2) + '（' + shortVerdict(s2.roi, s2.goal) + '）</b>';
+    h += '。';
+    var flipped = (s1 && vClass(s1.roi, s1.goal) !== vClass(o.roi, o.goal)) || (s2 && vClass(s2.roi, s2.goal) !== vClass(o.roi, o.goal));
+    h += flipped
+      ? '有反转点——这就是本方案的命门：投放期盯紧 CTR/CVR 和实际成交价，掉两成结论就变。也可以直接用上面「波动模拟」滑块自己拖。'
+      : '±20% 内结论稳，抗波动能力还行。想自己压测就用输出层的「波动模拟」滑块。';
+    return h;
+  }
+  function ansRisk(o) {
+    var top = o.top.cat;
+    var worst = o.rows.reduce(function (a, r) { return (r.cat.comp + r.cat.sat) > (a.cat.comp + a.cat.sat) ? r : a; }, o.rows[0]);
+    return '整体风险等级：<b>' + o.risk + '</b>。最大的雷是「' + worst.cat.name + '」——竞争强度 ' + worst.cat.comp + '/10、内容饱和度 ' + worst.cat.sat + '/10。<br>' +
+      '主推「' + top.name + '」自身的隐患：退货率约 ' + Math.round(top.ret * 100) + '%，价格敏感 ε=' + top.sens + '。<br>' +
+      '应对：① 测试期只投 20% 预算，数据说话；② ' + (top.sens >= 7 ? '价格敏感品类，用赠品/满减稳转化，别烧调性；' : '价格不敏感，把钱花在内容专业度上；') + '③ 详情页把尺寸/成分/预期写死，退货率就是利润率。';
+  }
+  function ansPricing(o) {
+    if (o.goal !== 'sell' || !o.pricing) return '现在算的不是带货口径，定价引擎没参与。切到「带货变现」目标，我再给你盈亏平衡价和区间。';
+    var p = o.pricing;
+    return '「' + p.cat.name + '」的账是这样算的：货+物流成本约 ¥' + Math.round(p.cost) + '，平台扣点 ' + Math.round(p.cat.fee * 100) + '%，<b>盈亏平衡价 = 成本 ÷ (1−扣点) ≈ ¥' + Math.round(p.bep) + '</b>——低于它就是白干。<br>建议卖价区间 ¥' + Math.round(p.lo) + '–' + Math.round(p.hi) + '。' +
+      (p.cat.sens >= 7 ? '弹性大（ε=' + p.cat.sens + '）：贴着下限走量，用满减和赠品打转化。' : '弹性小（ε=' + p.cat.sens + '）：可以顶到区间上限，把钱花在信任感上。');
+  }
+  function ansFallback(o) {
+    if (!o) return '先在输入层选好品类和预算，我才能结合计算结果回答。';
+    var core = o.goal === 'sell'
+      ? '预估月 GMV ¥' + fmtWan(o.gmv) + '、' + fmtNum(o.orders) + ' 单、ROI ' + o.roi.toFixed(2)
+      : o.goal === 'fans'
+        ? '预估月涨粉 ' + fmtNum(o.fans) + '、单粉成本 ¥2.2（示意）'
+        : '预估月曝光 ' + fmtNum(o.expo) + '、千次成本 ¥20（示意）';
+    return '当前方案一句话：' + headText(o) + '，' + core + '。<br>可以直接问我：「为什么' + o.top.cat.name + '拿这么多预算」「预算砍半会怎样」「结论什么情况下反转」「定价怎么定」「最大风险是什么」。';
+  }
+
+  function answerLocal(q, o) {
+    q = q || '';
+    if (!o) return ansFallback(o);
+    if (/砍半|减半|砍掉一半|预算减|少一半|预算少/.test(q)) return ansBudget(o, -0.5);
+    if (/翻倍|加倍|双倍|预算加|加预算|涨预算|增加预算|多投/.test(q)) return ansBudget(o, +0.5);
+    if (/反转|什么情况|什么条件下|什么时候.*不行|会.*不行吗|稳不稳|抗波动/.test(q)) return ansFlip(o);
+    if (/为什么|凭啥|怎么分|分配|拿.*预算|主推|这么多钱/.test(q)) return ansWhyAlloc(o);
+    if (/风险|雷|坑|最差|隐患|退|翻车/.test(q)) return ansRisk(o);
+    if (/定价|卖多少钱|多少钱|价格|客单/.test(q)) return ansPricing(o);
+    if (/涨粉|粉丝|引流/.test(q) && o.goal !== 'fans') {
+      var f = compute({ goal: 'fans' });
+      return '现在算的是「' + goalName(o.goal) + '」口径。若切到涨粉目标：同样这笔钱预计月涨粉约 ' + (f ? fmtNum(f.fans) : '—') + '（每粉 ¥2.2 示意估值），主攻「' + (f ? f.top.cat.name : '—') + '」。点上面目标切换就能看完整口径。';
+    }
+    if (/可行|能不能做|值不值|赚钱/.test(q)) return '判定逻辑是透明的：' + (o.goal === 'sell' ? 'ROI ≥1.3 可行、1.0–1.3 谨慎、<1.0 不可行；现在 ' + o.roi.toFixed(2) + ' → ' + shortVerdict(o.roi, o.goal) : '投产比 ≥0.7 可行；现在 ' + o.roi.toFixed(2) + ' → ' + shortVerdict(o.roi, o.goal)) + '。' + verdictText(o);
+    return ansFallback(o);
+  }
+
+  // 轻量 markdown：**bold** 换行
+  function mdLite(s) {
+    return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+  }
+  function llmContext(o) {
+    if (!o) return '用户尚未完成输入。';
+    var data = {
+      目标: goalName(o.goal), 月预算: Math.round(o.budget),
+      结论: headText(o), roi: +o.roi.toFixed(2),
+      主推: o.top.cat.name,
+      分配: o.rows.map(function (r) { return { 品类: r.cat.name, 预算: Math.round(r.b), 预期回报: Math.round(r.value), 综合分: r.score }; }),
+      lambda: +(o.lambda || 0).toFixed(2),
+      风险等级: o.risk,
+      预估: o.goal === 'sell' ? { 月GMV: Math.round(o.gmv), 月单数: Math.round(o.orders), 回本: o.payback } : o.goal === 'fans' ? { 月涨粉: Math.round(o.fans) } : { 月曝光: Math.round(o.expo) }
+    };
+    return '你是「红海参谋」，小红书投放决策助手。以下数字来自内置示意数据库的确定性计算（等边际分配/盈亏平衡定价），回答必须只用这些数字、不得编造：' + JSON.stringify(data) + '。用中文回答，150 字内，直接给判断和数字，语气像资深运营。';
+  }
+  function ask(q) {
+    q = (q || '').trim();
+    if (!q) return;
+    var input = $('chatInput');
+    if (input) input.value = '';
+    addMsg('user', esc(q));
+    var o = compute();
+    var thinking = addMsg('ai', '<i class="think">参谋正在结合当前数据计算…</i>');
+    var conf = llmConf();
+    if (conf && conf.key && conf.url) {
+      fetch(conf.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + conf.key },
+        body: JSON.stringify({
+          model: conf.model || 'doubao-1.5-pro-32k',
+          messages: [
+            { role: 'system', content: llmContext(o) },
+            { role: 'user', content: q }
+          ],
+          temperature: 0.4
+        })
+      }).then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }).then(function (j) {
+        var txt = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+        if (!txt) throw new Error('no content');
+        thinking.innerHTML = mdLite(txt) + '<span class="src">· LLM 实时解读</span>';
+        var log = $('chatLog'); log.scrollTop = log.scrollHeight;
+      }).catch(function () {
+        thinking.innerHTML = answerLocal(q, o) + '<span class="src">· LLM 调用失败，已回退本地引擎</span>';
+        var log = $('chatLog'); log.scrollTop = log.scrollHeight;
+      });
+    } else {
+      setTimeout(function () {
+        thinking.innerHTML = answerLocal(q, o) + '<span class="src">· 本地规则引擎 · 实时引用当前计算</span>';
+        var log = $('chatLog'); log.scrollTop = log.scrollHeight;
+      }, 420);
+    }
+  }
+  function bindChat() {
+    $('chatSend').addEventListener('click', function () { ask($('chatInput').value); });
+    $('chatInput').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') ask(this.value);
+    });
+    var conf = llmConf();
+    if (conf) {
+      if (conf.url) $('llmUrl').value = conf.url;
+      if (conf.model) $('llmModel').value = conf.model;
+      if (conf.key) $('llmKey').value = conf.key;
+    }
+    $('llmSave').addEventListener('click', function () {
+      var c = { url: $('llmUrl').value.trim(), key: $('llmKey').value.trim(), model: $('llmModel').value.trim() };
+      if (!c.url || !c.key) { localStorage.removeItem(LLM_KEY); toast('已清空配置，回到本地引擎'); return; }
+      localStorage.setItem(LLM_KEY, JSON.stringify(c));
+      toast('已保存，之后问答走真 LLM');
+    });
+    addMsg('ai', '我是红海参谋。左边的策略书是我刚按你的输入算出来的——结论为什么是这个、预算为什么这么分、哪里最脆，<b>直接问</b>。下面的问题点一下就能问。');
   }
 
   /* ---------- 输入层交互 ---------- */
@@ -735,13 +1216,27 @@ body {
         render();
       });
     });
+    $('copyBtn').addEventListener('click', function () {
+      var o = compute();
+      if (!o) { toast('先选好品类和预算'); return; }
+      copyText(reportText(o), '策略书已复制，粘贴即用');
+    });
+    $('shareBtn').addEventListener('click', function () {
+      updateURL();
+      copyText(location.href, '链接已复制，发给别人就是这个方案');
+    });
   }
 
+  /* ---------- 启动 ---------- */
+  parseURL();
+  syncUIFromState();
   renderDbTable();
   buildChips();
   bind();
+  bindChat();
   render();
 })();
+
 </script>
 </body>
 </html>
