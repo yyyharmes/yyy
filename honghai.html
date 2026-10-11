@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>红海参谋 · 投放决策引擎</title>
+<meta name="description" content="输入预算、目标、候选品类，输出一页投放策略书：推荐品类、定价区间、预算分配、预期 ROI、行动清单。" />
+<style>
+/* ===== 红海参谋 · 投放决策引擎 ===== */
+:root {
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --ink: #161820;
+  --ink-2: #54586a;
+  --ink-3: #8a8fa3;
+  --line: #e6e8f0;
+  --red: #e5484d;
+  --pink: #ff5d8f;
+  --green: #18a058;
+  --gold: #f5a623;
+  --blue: #2f6bff;
+  --radius: 14px;
+  --shadow: 0 10px 30px rgba(23,25,40,.07);
+  --font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font); color: var(--ink); background: var(--bg);
+  min-height: 100vh; -webkit-font-smoothing: antialiased;
+}
+.page { max-width: 1060px; margin: 0 auto; padding: 36px 20px 48px; }
+
+/* ---- 头部 ---- */
+.page-head { margin-bottom: 26px; }
+.brand-row { display: flex; align-items: center; gap: 14px; }
+.brand-mark {
+  width: 46px; height: 46px; display: grid; place-items: center; flex: none;
+  background: linear-gradient(135deg, var(--red), var(--pink));
+  color: #fff; font-weight: 800; font-size: 22px;
+  border-radius: 13px; box-shadow: 0 8px 20px rgba(229,72,77,.35);
+}
+.brand-txt h1 { font-size: 24px; font-weight: 800; letter-spacing: .5px; }
+.brand-txt p { margin-top: 4px; color: var(--ink-2); font-size: 13px; }
+
+/* ---- 分区 ---- */
+.sec { margin-bottom: 22px; }
+.sec-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 15px; font-weight: 800; margin-bottom: 12px;
+}
+.sec-no {
+  width: 24px; height: 24px; display: grid; place-items: center; flex: none;
+  background: var(--ink); color: #fff; border-radius: 8px; font-size: 13px;
+}
+.sec-out .sec-no { background: var(--green); }
+
+.card {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px;
+}
+
+/* ---- 输入层 ---- */
+.inp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 18px; }
+.inp-field { display: flex; flex-direction: column; gap: 8px; }
+.inp-field > label { font-size: 13px; font-weight: 800; }
+.inp-field > label em { font-style: normal; color: var(--ink-3); font-weight: 400; font-size: 12px; margin-left: 2px; }
+
+.inp-budget input {
+  width: 100%; padding: 13px 14px;
+  border: 1.5px solid var(--line); border-radius: 10px;
+  font-size: 20px; font-weight: 800; font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.inp-budget input:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px rgba(229,72,77,.12); }
+
+.presets { display: flex; gap: 8px; }
+.preset {
+  flex: 1; border: 1px solid var(--line); background: #fff; border-radius: 8px;
+  padding: 7px 0; font-size: 13px; font-weight: 700; font-family: inherit;
+  color: var(--ink-2); cursor: pointer; transition: all .15s;
+}
+.preset:hover { border-color: var(--red); color: var(--red); }
+.preset.on { background: rgba(229,72,77,.08); border-color: var(--red); color: var(--red); }
+
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.seg-btn {
+  border: 1.5px solid var(--line); background: #fff; border-radius: 10px;
+  padding: 12px 4px; font-size: 14px; font-weight: 700; font-family: inherit;
+  color: var(--ink-2); cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.seg-btn:hover { border-color: var(--red); }
+.seg-btn.on {
+  background: linear-gradient(135deg, var(--red), var(--pink));
+  border-color: transparent; color: #fff;
+  box-shadow: 0 6px 16px rgba(229,72,77,.35);
+}
+.inp-note { font-size: 12px; color: var(--ink-3); line-height: 1.6; }
+
+.chip-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.chip {
+  border: 1.5px solid var(--line); background: #fff; border-radius: 999px;
+  padding: 10px 16px; font-size: 14px; font-weight: 700; font-family: inherit;
+  color: var(--ink-2); cursor: pointer; transition: all .15s;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; background: #c3c8d4; flex: none; }
+.chip[data-red="1"] .dot { background: var(--red); }
+.chip:hover { border-color: var(--red); }
+.chip.on {
+  background: linear-gradient(135deg, var(--red), var(--pink));
+  border-color: transparent; color: #fff;
+  box-shadow: 0 6px 16px rgba(229,72,77,.35);
+}
+.chip.on .dot { background: rgba(255,255,255,.85); }
+.chip-count { font-size: 12px; color: var(--ink-3); }
+
+* ---- 输出层 ---- */
+.out-empty {
+  background: #fff; border: 1.5px dashed var(--line); border-radius: var(--radius);
+  padding: 40px 20px; text-align: center; color: var(--ink-3); font-size: 14px;
+}
+
+.out-verdict {
+  border-radius: var(--radius); padding: 26px 28px; color: #fff;
+  background: linear-gradient(135deg, #d63a3f, #ff5d8f);
+  box-shadow: 0 16px 40px rgba(224,72,80,.35);
+  display: flex; flex-wrap: wrap; gap: 18px; align-items: center;
+}
+.out-verdict.v-ok { background: linear-gradient(135deg, #0f9d58, #18a058); box-shadow: 0 16px 40px rgba(18,160,88,.3); }
+.out-verdict.v-mid { background: linear-gradient(135deg, #e8a400, #f5a623); color: #3a2500; box-shadow: 0 16px 40px rgba(245,166,35,.3); }
+.v-main { flex: 1 1 300px; min-width: 240px; }
+.v-kicker { font-size: 12px; opacity: .85; font-weight: 700; letter-spacing: 1px; }
+.v-head { font-size: 28px; font-weight: 800; margin: 6px 0 8px; }
+.v-why { font-size: 13.5px; line-height: 1.7; opacity: .95; }
+.v-stats { display: flex; gap: 12px; flex: 1 1 340px; }
+.v-stat {
+  flex: 1; background: rgba(255,255,255,.16); backdrop-filter: blur(4px);
+  border-radius: 12px; padding: 14px 12px; min-width: 96px;
+}
+.v-stat .n { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.v-stat .l { font-size: 11.5px; opacity: .85; margin-top: 4px; line-height: 1.4; }
+
+.out-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+.out-card {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px;
+}
+.out-card h3 {
+  font-size: 14px; font-weight: 800; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 7px;
+}
+.out-card h3 .tagmini {
+  font-size: 11px; color: #fff; background: var(--green); border-radius: 6px; padding: 2px 7px;
+}
+.out-card.wide { grid-column: 1 / -1; }
+
+/* 品类对比行 */
+.cmp-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 0; border-bottom: 1px dashed var(--line);
+}
+.cmp-row:last-child { border-bottom: none; }
+.cmp-name { width: 78px; flex: none; font-weight: 800; font-size: 14px; }
+.cmp-bar-wrap { flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.cmp-bar { height: 9px; border-radius: 99px; background: #eef0f5; overflow: hidden; }
+.cmp-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--red), var(--pink)); }
+.cmp-bar i.g { background: linear-gradient(90deg, #0f9d58, #18a058); }
+.cmp-bar i.m { background: linear-gradient(90deg, #e8a400, #f5a623); }
+.cmp-sub { font-size: 11.5px; color: var(--ink-3); }
+.cmp-tag { flex: none; font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 999px; }
+.cmp-tag.g { color: var(--green); background: rgba(24,160,88,.12); }
+.cmp-tag.m { color: #b97908; background: rgba(245,166,35,.16); }
+.cmp-tag.r { color: var(--red); background: rgba(229,72,77,.12); }
+
+/* 预算分配 */
+.alloc-stack { display: flex; height: 34px; border-radius: 10px; overflow: hidden; margin-bottom: 14px; }
+.alloc-stack i { height: 100%; transition: width .3s; }
+.alloc-legend { display: flex; flex-direction: column; gap: 10px; }
+.alloc-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.alloc-swatch { width: 12px; height: 12px; border-radius: 4px; flex: none; }
+.alloc-row b { font-weight: 800; }
+.alloc-row .amtc { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.alloc-why { margin-top: 12px; font-size: 12px; color: var(--ink-3); line-height: 1.7; background: #f6f7fb; border-radius: 8px; padding: 10px 12px; }
+
+/* 定价 / 转化 */
+.price-box { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.price-box .p { font-size: 26px; font-weight: 800; color: var(--red); font-variant-numeric: tabular-nums; }
+.price-box .p-behind { font-size: 13px; color: var(--ink-3); }
+.plain { font-size: 12.5px; color: var(--ink-3); line-height: 1.7; }
+.kv { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--line); font-size: 13.5px; }
+.kv:last-child { border-bottom: none; }
+.kv .k { color: var(--ink-2); }
+.kv .v { font-weight: 800; font-variant-numeric: tabular-nums; }
+.kv .v em { font-style: normal; font-weight: 400; color: var(--ink-3); font-size: 11.5px; margin-left: 4px; }
+.epsilon {
+  margin-top: 12px; border-left: 3px solid var(--pink); background: #fff6f7;
+  padding: 10px 12px; border-radius: 0 8px 8px 0; font-size: 12.5px; line-height: 1.7; color: var(--ink-2);
+}
+.epsilon b { color: var(--red); }
+
+/* 账本 */
+.funnel { display: flex; flex-direction: column; gap: 0; }
+.fstep { display: grid; grid-template-columns: 92px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+.fstep:last-child { border-bottom: none; }
+.fstep .fn { font-size: 12px; font-weight: 700; color: var(--ink-2); }
+.fstep .fd { font-size: 11.5px; color: var(--ink-3); line-height: 1.5; }
+.fstep .fv { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fstep.hl .fv { color: var(--red); }
+
+/* 行动清单 */
+.todo { list-style: none; display: grid; gap: 10px; }
+.todo li {
+  display: flex; gap: 10px; font-size: 13.5px; line-height: 1.65; color: var(--ink-2);
+}
+.todo .ck {
+  width: 20px; height: 20px; flex: none; margin-top: 2px;
+  border: 1.5px solid var(--green); border-radius: 6px;
+  display: grid; place-items: center; color: var(--green); font-weight: 800; font-size: 12px;
+}
+.todo b { color: var(--ink); }
+
+/* 敏感性 */
+.sens-bar { height: 8px; border-radius: 99px; background: linear-gradient(90deg, #18a058, #f5a623, #e5484d); margin: 8px 0 4px; position: relative; }
+.sens-bar .pin { position: absolute; top: -4px; width: 3px; height: 16px; background: var(--ink); border-radius: 2px; }
+
+.page-foot { margin-top: 26px; text-align: center; font-size: 12px; color: var(--ink-3); }
+
+/* ---- 响应式 ---- */
+@media (max-width: 860px) {
+  .inp-row { grid-template-columns: 1fr; }
+  .out-grid { grid-template-columns: 1fr; }
+  .v-stats { flex-wrap: wrap; }
+  .brand-txt h1 { font-size: 20px; }
+}
+@media (max-width: 520px) {
+  .seg { grid-template-columns: 1fr; }
+  .v-head { font-size: 22px; }
+  .fstep { grid-template-columns: 78px 1fr auto; }
+}
+</style>
+</head>
+<body>
+
+<main class="page">
+  <header class="page-head">
+    <div class="brand-row">
+      <div class="brand-mark">红</div>
+      <div class="brand-txt">
+        <h1>红海参谋 · 投放决策引擎</h1>
+        <p>输入层 → 计算引擎 → 一页投放策略书</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- ① 输入层 -->
+  <section class="sec sec-input">
+    <div class="sec-title"><span class="sec-no">①</span> 输入层 · 告诉它三件事</div>
+    <div class="card">
+
+      <div class="inp-row">
+        <div class="inp-field inp-budget">
+          <label>预算金额 <em>元 / 月</em></label>
+          <input type="number" id="f_budget" min="1000" step="1000" value="30000" inputmode="numeric" />
+          <div class="presets">
+            <button type="button" class="preset" data-v="5000">5千</button>
+            <button type="button" class="preset" data-v="10000">1万</button>
+            <button type="button" class="preset on" data-v="30000">3万</button>
+            <button type="button" class="preset" data-v="100000">10万</button>
+          </div>
+        </div>
+
+        <div class="inp-field">
+          <label>经营目标 <em>决定算法权重</em></label>
+          <div class="seg" id="goalSeg">
+            <button type="button" class="seg-btn on" data-goal="sell">💰 带货变现</button>
+            <button type="button" class="seg-btn" data-goal="fans">📈 涨粉引流</button>
+            <button type="button" class="seg-btn" data-goal="brand">🎯 品牌声量</button>
+          </div>
+          <p class="inp-note" id="goalNote">目标=带货：算法按「每 1 元推广能赚回多少毛利」排序。</p>
+        </div>
+      </div>
+
+      <div class="inp-field">
+        <label>候选品类 <em>建议选 2–3 个（最多 4 个）</em></label>
+        <div class="chip-grid" id="catGrid"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ③ 输出层 -->
+  <section class="sec sec-out">
+    <div class="sec-title"><span class="sec-no">②</span> 输出层 · 一页投放策略书</div>
+    <div id="output"></div>
+  </section>
+
+  <footer class="page-foot">
+    © 2026 红海参谋 · 数据参数为估算并显式标注假设 · 不构成投资建议
+  </footer>
+</main>
+
+<script>
+/* ===== 红海参谋 · 计算引擎 =====
+ * 内置品类数据库（12 类，示意估算值，均已显式标注）
+ * 算法：需求弹性 / 盈亏平衡定价 / 等边际预算分配（边际收益递减）/ ROI 回本预测
+ */
+(function () {
+  'use strict';
+
+  /* ---------- 品类数据库（示意估算值） ---------- */
+  var DB = [
+    // q = 基准投放边际回报（每 1 元推广费的毛利，示意）；cap = 品类投放容量（月，示意）
+    { name: '美妆护肤', heat: 9.5, comp: 9.8, sat: 9.5, q: 2.2, cap: 120000, price: 150, margin: 0.60, costRatio: 0.30, fee: 0.18, ctr: 0.10, cvr: 0.020, er: 0.045, follow: 0.006, sens: 8, ret: 0.08, form: '测评对比、前后对比图、成分党长文', fits: { sell: 9, fans: 7, brand: 9 } },
+    { name: '服饰穿搭', heat: 9.0, comp: 9.6, sat: 9.2, q: 1.8, cap: 100000, price: 150, margin: 0.55, costRatio: 0.38, fee: 0.12, ctr: 0.09, cvr: 0.018, er: 0.050, follow: 0.008, sens: 9, ret: 0.18, form: '穿搭合集、一衣多穿、身材适配指南', fits: { sell: 8, fans: 9, brand: 8 } },
+    { name: '家居好物', heat: 8.5, comp: 8.2, sat: 8.4, q: 2.0, cap: 60000, price: 100, margin: 0.50, costRatio: 0.45, fee: 0.10, ctr: 0.08, cvr: 0.025, er: 0.040, follow: 0.005, sens: 6, ret: 0.05, form: '场景改造、好物清单、租房神器', fits: { sell: 8, fans: 7, brand: 6 } },
+    { name: '食品零食', heat: 8.8, comp: 8.5, sat: 8.6, q: 2.4, cap: 80000, price: 50, margin: 0.45, costRatio: 0.50, fee: 0.08, ctr: 0.09, cvr: 0.035, er: 0.050, follow: 0.005, sens: 7, ret: 0.03, form: '试吃测评、办公室零食、囤货清单', fits: { sell: 9, fans: 6, brand: 6 } },
+    { name: '母婴用品', heat: 7.5, comp: 7.8, sat: 7.6, q: 2.1, cap: 50000, price: 150, margin: 0.48, costRatio: 0.47, fee: 0.10, ctr: 0.08, cvr: 0.030, er: 0.040, follow: 0.005, sens: 5, ret: 0.06, form: '真实使用记录、月龄清单、避坑指南', fits: { sell: 8, fans: 6, brand: 7 } },
+    { name: '宠物用品', heat: 8.2, comp: 7.4, sat: 7.8, q: 2.3, cap: 40000, price: 100, margin: 0.52, costRatio: 0.42, fee: 0.10, ctr: 0.09, cvr: 0.028, er: 0.055, follow: 0.009, sens: 6, ret: 0.04, form: '萌宠日常、好物开箱、养宠攻略', fits: { sell: 8, fans: 9, brand: 7 } },
+    { name: '数码3C',   heat: 7.0, comp: 7.2, sat: 7.0, q: 1.5, cap: 40000, price: 800, margin: 0.20, costRatio: 0.72, fee: 0.06, ctr: 0.06, cvr: 0.015, er: 0.030, follow: 0.004, sens: 4, ret: 0.04, form: '硬核测评、对比横评、使用教程', fits: { sell: 6, fans: 7, brand: 8 } },
+    { name: '健身运动', heat: 7.8, comp: 7.5, sat: 7.7, q: 1.9, cap: 30000, price: 200, margin: 0.50, costRatio: 0.44, fee: 0.10, ctr: 0.07, cvr: 0.022, er: 0.045, follow: 0.007, sens: 5, ret: 0.07, form: '跟练教程、器械测评、身材记录', fits: { sell: 7, fans: 8, brand: 7 } },
+    { name: '收纳清洁', heat: 7.0, comp: 7.0, sat: 7.2, q: 1.7, cap: 25000, price: 60, margin: 0.45, costRatio: 0.50, fee: 0.10, ctr: 0.07, cvr: 0.030, er: 0.040, follow: 0.004, sens: 7, ret: 0.03, form: 'Before/After、收纳动线、清单合集', fits: { sell: 8, fans: 5, brand: 4 } },
+    { name: '珠宝配饰', heat: 6.5, comp: 6.8, sat: 6.6, q: 1.6, cap: 30000, price: 400, margin: 0.65, costRatio: 0.28, fee: 0.10, ctr: 0.06, cvr: 0.012, er: 0.035, follow: 0.005, sens: 3, ret: 0.05, form: '上身效果、工艺科普、礼物清单', fits: { sell: 6, fans: 6, brand: 9 } },
+    { name: '本地探店', heat: 8.6, comp: 8.0, sat: 8.2, q: 2.0, cap: 20000, price: 200, margin: 0.70, costRatio: 0.24, fee: 0.05, ctr: 0.10, cvr: 0.040, er: 0.060, follow: 0.008, sens: 6, ret: 0.02, form: '探店vlog、避雷清单、城市攻略', fits: { sell: 7, fans: 8, brand: 8 } },
+    { name: '知识付费', heat: 7.2, comp: 6.5, sat: 6.8, q: 2.8, cap: 15000, price: 300, margin: 0.85, costRatio: 0.12, fee: 0.06, ctr: 0.05, cvr: 0.008, er: 0.030, follow: 0.006, sens: 2, ret: 0.01, form: '干货长文、案例拆解、免费资料引流', fits: { sell: 7, fans: 8, brand: 6 } }
+  ];
+
+  var GOAL_NOTE = {
+    sell: '目标=带货：算法按「每 1 元推广费能赚回多少毛利」给品类排序和分预算。',
+    fans: '目标=引流：算法按「每 1 元推广费能带来多少有效粉丝」排序（每粉估值 ¥2.2，示意）。',
+    brand: '目标=品牌：算法按「每 1 元推广费能买到多少有效声量」排序（千次曝光估值 ¥20，示意）。'
+  };
+  var ALLOC_COLORS = ['#e5484d', '#ff5d8f', '#2f6bff', '#18a058'];
+
+  /* ---------- 状态 ---------- */
+  var state = { budget: 30000, goal: 'sell', cats: ['美妆护肤', '家居好物', '宠物用品'] };
+
+  /* ---------- 工具 ---------- */
+  function $(id) { return document.getElementById(id); }
+  function clamp(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
+  function fmtWan(x) {
+    if (!isFinite(x)) return '—';
+    if (Math.abs(x) >= 100000000) return (x / 100000000).toFixed(2) + '亿';
+    if (Math.abs(x) >= 10000) return (x / 10000).toFixed(x >= 100000 ? 0 : 1) + '万';
+    return Math.round(x).toLocaleString();
+  }
+  function fmtNum(x) {
+    if (!isFinite(x)) return '—';
+    if (x >= 10000) return (x / 10000).toFixed(1) + '万';
+    return Math.round(x).toLocaleString();
+  }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  /* ---------- 计算引擎 ---------- */
+  function byName(n) { for (var i = 0; i < DB.length; i++) if (DB[i].name === n) return DB[i]; return null; }
+
+  // 按目标调整后的边际回报 q
+  function goalQ(cat, goal) {
+    var fit = goal === 'sell' ? cat.fits.sell : goal === 'fans' ? cat.fits.fans : cat.fits.brand;
+    var mult = goal === 'sell' ? 1 : goal === 'fans' ? 0.9 : 0.8;
+    return cat.q * mult * (fit / 8);
+  }
+
+  // 等边际分配：解 MROI_i(b_i) = q_i / (1 + b_i/cap_i) = λ，Σb_i = budget
+  // 每个入选品类先保底 12%「探索预算」（避免数据不足就全砍），其余按等边际原则分
+  // 回报积分：value_i = cap_i · q_i · ln(1 + b_i/cap_i)
+  function allocate(list, budget) {
+    var qs = list.map(function (c) { return goalQ(c, state.goal); });
+    var caps = list.map(function (c) { return c.cap; });
+    var n = list.length;
+    if (n === 0) return { rows: [], lambda: 0 };
+    var floor = n > 1 ? budget * 0.12 : 0;   // 探索保底
+    var rest = budget - floor * n;           // 等边际待分部分
+    var bs = list.map(function () { return floor; });
+    if (n === 1 || rest <= 0) {
+      bs = list.map(function () { return budget / n; });
+    } else {
+      var qmax = Math.max.apply(null, qs);
+      var lo = 1e-9, hi = qmax * 1.000001;
+      for (var it = 0; it < 80; it++) {
+        var lam = (lo + hi) / 2, s = 0;
+        for (var i = 0; i < n; i++) s += Math.max(0, caps[i] * (qs[i] / lam - 1));
+        if (s > rest) lo = lam; else hi = lam;
+      }
+      var lamF = (lo + hi) / 2;
+      var extras = qs.map(function (q, i) { return Math.max(0, caps[i] * (q / lamF - 1)); });
+      var sum = extras.reduce(function (a, b) { return a + b; }, 0);
+      if (sum > 0) {
+        var k = rest / sum;
+        extras = extras.map(function (x) { return x * k; });
+      } else { extras[0] = rest; }
+      bs = bs.map(function (b, i) { return b + extras[i]; });
+    }
+    var rows = list.map(function (c, i) {
+      var b = bs[i], q = qs[i];
+      var value = c.cap * q * Math.log(1 + b / c.cap);
+      return { cat: c, q: q, b: b, value: value };
+    }).filter(function (r) { return r.b > 0.5; });
+    var lam_ = 0;
+    rows.forEach(function (r) { lam_ = Math.max(lam_, r.q / (1 + r.b / r.cat.cap)); });
+    return { rows: rows, lambda: lam_ };
+  }
+
+  function compute() {
+    var budget = Math.max(100, parseFloat($('f_budget').value) || 0);
+    var goal = state.goal;
+    var list = state.cats.map(byName).filter(Boolean);
+    if (!list.length || budget < 100) return null;
+
+    var alloc = allocate(list, budget);
+    var rows = alloc.rows;
+    var totalValue = rows.reduce(function (a, r) { return a + r.value; }, 0);
+    var totalB = rows.reduce(function (a, r) { return a + r.b; }, 0);
+    var roi = totalB > 0 ? totalValue / totalB : 0;
+
+    // 每个品类综合评分（0-100，示意）
+    rows.forEach(function (r) {
+      var SR = r.cat.heat / r.cat.comp;
+      var srScore = clamp((SR - 0.85) * 2.22, 0, 1) * 100;
+      var goal = state.goal;
+      var fit = goal === 'sell' ? r.cat.fits.sell : goal === 'fans' ? r.cat.fits.fans : r.cat.fits.brand;
+      var fitScore = fit * 10;
+      var qScore = clamp((r.q - 1.2) / 1.4, 0, 1) * 100;
+      r.score = Math.round(0.3 * srScore + 0.3 * qScore + 0.4 * fitScore);
+      r.SR = SR;
+      r.fit = fit;
+    });
+    rows.sort(function (a, b) { return b.b - a.b; });
+    // 主推 = 分到预算最多的品类（和分配结果一致，避免口径打架）
+    var top = rows[0];
+
+    // 目标口径的产出
+    var out = { goal: state.goal, budget: budget, rows: rows, top: top, roi: roi, lambda: alloc.lambda };
+    if (goal === 'sell') {
+      out.gmv = rows.reduce(function (a, r) { return a + r.value / r.cat.margin; }, 0);
+      out.orders = rows.reduce(function (a, r) { return a + (r.value / r.cat.margin) / r.cat.price; }, 0);
+      out.expo = rows.reduce(function (a, r) {
+        var orders = (r.value / r.cat.margin) / r.cat.price;
+        return a + orders / (r.cat.cvr * r.cat.ctr);
+      }, 0);
+    } else if (goal === 'fans') {
+      out.fans = totalValue / 2.2;
+      out.expo = rows.reduce(function (a, r) { return a + (r.value / 2.2) / r.cat.follow; }, 0);
+    } else {
+      out.expo = totalValue / 0.02;
+      out.eng = out.expo * (top.cat.er);
+    }
+    // 回本周期（带货口径）
+    if (goal === 'sell' && roi > 1.05) {
+      var months = 1 / (roi - 1);
+      out.payback = months <= 12 ? (months < 1 ? '不到 1 个月' : '约 ' + (Math.round(months * 10) / 10) + ' 个月') : '超过 12 个月';
+    } else if (goal === 'sell') {
+      out.payback = roi > 0.95 ? '勉强打平，不赚不赔' : '回不了本';
+    } else {
+      out.payback = goal === 'fans'
+        ? '涨粉 ' + fmtNum(out.fans) + ' / 月（按每粉 ¥2.2 折算价值）'
+        : '获得 ' + fmtNum(out.expo) + ' 曝光 / 月（按千次 ¥20 折算价值）';
+    }
+    // 风险等级
+    var risk = 0;
+    rows.forEach(function (r) { risk += r.cat.comp * 3 + r.cat.sat * 3 + r.cat.ret * 40 * (r.b / totalB); });
+    risk = risk / rows.length + (1 - top.cat.margin) * 12;
+    out.risk = risk >= 70 ? '高' : risk >= 50 ? '中' : '低';
+    // 定价（带货 & 主推品类）
+    if (goal === 'sell') {
+      var c = top.cat;
+      var cost = c.price * c.costRatio;
+      var bep = cost / (1 - c.fee);
+      out.pricing = {
+        cat: c, cost: cost, bep: bep,
+        lo: bep * (c.sens >= 7 ? 1.08 : 1.15),
+        hi: bep * (c.sens >= 7 ? 1.30 : 1.45)
+      };
+    }
+    return out;
+  }
+
+  /* ---------- 渲染 ---------- */
+  function vClass(roi, goal) {
+    if (goal !== 'sell') return roi >= 0.7 ? 'v-ok' : 'v-mid';
+    if (roi >= 1.3) return 'v-ok';
+    if (roi >= 1.0) return 'v-mid';
+    return '';
+  }
+  function verdictText(o) {
+    var t = o.top.cat.name;
+    if (o.goal === 'sell') {
+      if (o.roi >= 1.3) return '主推 ' + t + '：预算按等边际原则拆给 ' + o.rows.length + ' 个品类，整体预期 ROI ' + o.roi.toFixed(2) + '，' + o.payback + '回本。先投 20% 测试笔记，数据验证后再放量。';
+      if (o.roi >= 1.0) return '能做但很紧：预期 ROI 仅 ' + o.roi.toFixed(2) + '（' + o.payback + '）。建议先砍到 2 个品类、用自然流量测内容，ROI 跑过 1.3 再加预算。';
+      return '按当前参数别投：整体预期 ROI 只有 ' + o.roi.toFixed(2) + '（' + o.payback + '）。换候选品类、提高客单价或降低获客成本后再来算一次。';
+    }
+    if (o.goal === 'fans') return '主攻 ' + t + '：预计月涨粉 ' + fmtNum(o.fans) + '，涨粉成本约 ¥' + (2.2).toFixed(1) + '/粉（示意估值）。内容形式优先 ' + t + ' 的 ' + o.top.cat.form.split('、')[0] + '。';
+    return '主攻 ' + t + '：预计月曝光 ' + fmtNum(o.expo) + '，有效声量成本约 ¥20/千次曝光（示意估值）。品牌词卡位建议同步做搜索笔记。';
+  }
+  function headText(o) {
+    if (o.goal === 'sell') return o.roi >= 1.3 ? '可行 ✅ 主推「' + o.top.cat.name + '」' : o.roi >= 1.0 ? '谨慎 ⚠️ 勉强能做' : '不可行 ✋ 别投';
+    return o.roi >= 0.7 ? '可行 ✅ 主攻「' + o.top.cat.name + '」' : '谨慎 ⚠️ 效率偏低';
+  }
+  function renderVerdict(o) {
+    var s1, s2, s3;
+    if (o.goal === 'sell') {
+      s1 = { n: o.roi.toFixed(2), l: '预期 ROI<br>每 1 元赚回 ' + o.roi.toFixed(2) + ' 元毛利' };
+      s2 = { n: '¥' + fmtWan(o.gmv), l: '预估月 GMV<br>按各品类毛利率折算' };
+      s3 = { n: fmtNum(o.orders), l: '预估月成交单数<br>按品类转化率推算' };
+    } else if (o.goal === 'fans') {
+      s1 = { n: fmtNum(o.fans), l: '预估月涨粉<br>按品类关注转化率' };
+      s2 = { n: '¥2.2/粉', l: '单粉成本<br>示意估值' };
+      s3 = { n: fmtNum(o.expo), l: '预估月曝光<br>涨粉的上游流量' };
+    } else {
+      s1 = { n: fmtNum(o.expo), l: '预估月曝光<br>声量的基本盘' };
+      s2 = { n: '¥20/千次', l: '千次曝光成本<br>示意估值' };
+      s3 = { n: o.risk, l: '声量波动风险<br>高=内容易沉' };
+    }
+    return '<div class="out-verdict ' + vClass(o.roi, o.goal) + '">' +
+      '<div class="v-main">' +
+      '<div class="v-kicker">结论 · ' + (o.goal === 'sell' ? '带货变现' : o.goal === 'fans' ? '涨粉引流' : '品牌声量') + '口径</div>' +
+      '<div class="v-head">' + esc(headText(o)) + '</div>' +
+      '<div class="v-why">' + esc(verdictText(o)) + '</div>' +
+      '</div><div class="v-stats">' +
+      [s1, s2, s3].map(function (s) {
+        return '<div class="v-stat"><div class="n">' + s.n + '</div><div class="l">' + s.l + '</div></div>';
+      }).join('') +
+      '</div></div>';
+  }
+  function renderCompare(o) {
+    return o.rows.map(function (r, i) {
+      var cls = i === 0 ? 'g' : r.score >= 55 ? 'm' : 'r';
+      var tag = i === 0 ? '主推' : r.score >= 55 ? '搭配' : '不建议重仓';
+      return '<div class="cmp-row">' +
+        '<div class="cmp-name">' + esc(r.cat.name) + '</div>' +
+        '<div class="cmp-bar-wrap"><div class="cmp-bar"><i class="' + cls + '" style="width:' + clamp(r.score, 4, 100) + '%"></i></div>' +
+        '<div class="cmp-sub">综合分 ' + r.score + ' · 供需比 ' + r.SR.toFixed(2) + ' · 预算 ¥' + fmtWan(r.b) + '（' + Math.round(r.b / o.budget * 100) + '%）</div></div>' +
+        '<div class="cmp-tag ' + cls + '">' + tag + '</div></div>';
+    }).join('');
+  }
+  function renderAlloc(o) {
+    var stack = o.rows.map(function (r, i) {
+      return '<i style="width:' + (r.b / o.budget * 100) + '%;background:' + ALLOC_COLORS[i % 4] + '" title="' + esc(r.cat.name) + '"></i>';
+    }).join('');
+    var legend = o.rows.map(function (r, i) {
+      return '<div class="alloc-row">' +
+        '<span class="alloc-swatch" style="background:' + ALLOC_COLORS[i % 4] + '"></span>' +
+        '<b>' + esc(r.cat.name) + '</b><span class="amtc">¥' + fmtWan(r.b) + ' / 月 · ' + Math.round(r.b / o.budget * 100) + '% · 预期回报 ¥' + fmtWan(r.value) + '</span></div>';
+    }).join('');
+    return '<div class="alloc-stack">' + stack + '</div>' +
+      '<div class="alloc-legend">' + legend + '</div>' +
+      '<div class="alloc-why">两步分法：① 每个入选品类先保底 <b>12% 探索预算</b>（避免数据不足就被全砍）；② 剩下的按经济学等边际原则（MROI(A)=MROI(B)）分——一直加给回报最高的品类，直到每个品类「再投 1 元的回报」拉平为止。大品类容量大（饱和慢），自然拿大头。</div>';
+  }
+  function renderPricing(o) {
+    var p = o.pricing, c = p.cat;
+    var sensTip = c.sens >= 7
+      ? '弹性系数 ε=' + c.sens + '（大）：这个品类价格敏感，价格战、赠品、满减有效 → 定价贴着平衡价走，走量。'
+      : c.sens >= 4
+        ? '弹性系数 ε=' + c.sens + '（中）：性价比和差异化内容并行，定价取中间档。'
+        : '弹性系数 ε=' + c.sens + '（小）：用户不差钱、差信任 → 别拼价格，拼内容、专业度和信任，定价可以到区间上限。';
+    return '<div class="price-box"><span class="p">¥' + (Math.round(p.lo)) + ' – ' + (Math.round(p.hi)) + '</span><span class="p-behind">建议卖价区间（' + c.name + '）</span></div>' +
+      '<div class="plain">按中位价 ¥' + c.price + ' 估算：货 + 物流成本约 ¥' + Math.round(p.cost) + '，平台扣点 ' + Math.round(c.fee * 100) + '%，所以<b>盈亏平衡价 = ' + Math.round(p.cost) + ' ÷ (1 − ' + Math.round(c.fee * 100) + '%) ≈ ¥' + Math.round(p.bep) + '</b>——卖价低于这个数就是白干。</div>' +
+      '<div class="epsilon">' + sensTip + '</div>';
+  }
+  function renderBenchmark(o) {
+    var rows = [];
+    if (o.goal === 'fans') {
+      rows.push(['预估月涨粉', fmtNum(o.fans), '按品类关注转化率推算']);
+      rows.push(['单粉成本', '¥' + (o.budget / Math.max(1, o.fans)).toFixed(1), '示意优秀线：低于 ¥3/粉算优秀']);
+      rows.push(['总涨粉价值', '¥' + fmtWan(o.fans * 2.2), '每粉按 ¥2.2 折算（示意）']);
+    } else {
+      rows.push(['预估月曝光', fmtNum(o.expo), '内容 + 付费投流加总（示意）']);
+      rows.push(['千次曝光成本', '¥' + (o.budget / Math.max(1, o.expo) * 1000).toFixed(0), '行业区间 ¥15–35（示意）']);
+      rows.push(['总声量价值', '¥' + fmtWan(o.expo * 0.02), '按千次 ¥20 折算（示意）']);
+    }
+    rows.push(['测试期预算', '¥' + fmtWan(o.budget * 0.2) + '（20%）', '先测内容再放量，别一把梭']);
+    return rows.map(function (r) {
+      return '<div class="kv"><span class="k">' + r[0] + '</span><span class="v">' + r[1] + '<em>' + r[2] + '</em></span></div>';
+    }).join('');
+  }
+  function renderFunnel(o) {
+    var rows = [];
+    if (o.goal === 'sell') {
+      rows.push(['月曝光量', fmtNum(o.expo), '内容 + 付费投流加总（示意）']);
+      rows.push(['点击量', fmtNum(o.expo * o.top.cat.ctr), '按品类点击率 ' + (o.top.cat.ctr * 100).toFixed(0) + '%']);
+      rows.push(['成交单数', fmtNum(o.orders), '按品类成交转化 ' + (o.top.cat.cvr * 100).toFixed(1) + '%']);
+      rows.push(['毛利润', '¥' + fmtWan(o.rows.reduce(function (a, r) { return a + r.value; }, 0)), '推广费 × ROI，去掉成本和扣点', true]);
+      rows.push(['回本周期', esc(o.payback), '净利 = 毛利 − 预算，攒回预算要几个月']);
+    } else if (o.goal === 'fans') {
+      rows.push(['月曝光量', fmtNum(o.expo), '内容 + 付费投流加总（示意）']);
+      rows.push(['月涨粉', fmtNum(o.fans), '按品类关注转化率 ' + (o.top.cat.follow * 100).toFixed(1) + '%']);
+      rows.push(['涨粉成本', '¥2.2/粉', '示意估值：低于 3 元算优秀']);
+      rows.push(['粉丝价值折算', '¥' + fmtWan(o.fans * 2.2), '每粉按 ¥2.2 折算（示意）', true]);
+    } else {
+      rows.push(['月曝光量', fmtNum(o.expo), '内容 + 付费投流加总（示意）']);
+      rows.push(['月互动量', fmtNum(o.eng || o.expo * 0.045), '按品类互动率推算']);
+      rows.push(['千次曝光成本', '¥20', '示意估值：信息流普遍 ¥15–35']);
+      rows.push(['声量价值折算', '¥' + fmtWan(o.expo * 0.02), '按千次 ¥20 折算（示意）', true]);
+    }
+    return '<div class="funnel">' + rows.map(function (r) {
+      return '<div class="fstep' + (r[3] ? ' hl' : '') + '"><span class="fn">' + r[0] + '</span><span class="fd">' + r[2] + '</span><span class="fv">' + r[1] + '</span></div>';
+    }).join('') + '</div>';
+  }
+  function renderTodo(o) {
+    var top = o.top.cat;
+    var items = [];
+    items.push('<b>第 1 周</b>：拿 20% 预算（约 ¥' + fmtWan(o.budget * 0.2) + '）投 4–6 篇「' + esc(top.form.split('、')[0]) + '」，只测点击率和转化，不追求爆。');
+    if (o.goal === 'sell') {
+      var p = o.pricing;
+      items.push('<b>定价</b>：卖价锚在 ¥' + Math.round(p.lo) + '–' + Math.round(p.hi) + '，低于 ¥' + Math.round(p.bep) + ' 坚决不卖（白干）。');
+      items.push(top.sens >= 7
+        ? '<b>打法</b>：该品类价格敏感（ε=' + top.sens + '），用价格、赠品、满减打转化，别烧钱做调性。'
+        : '<b>打法</b>：该品类价格不敏感（ε=' + top.sens + '），把钱花在内容差异化和专业感上，定价取上限。');
+    } else if (o.goal === 'fans') {
+      items.push('<b>承接</b>：主页 3 件套（头像 / 昵称 / 简介）先改好，置顶 1 篇转化笔记，否则白涨。');
+      items.push('<b>内容节奏</b>：' + esc(top.name) + '涨粉靠「' + esc(top.form.split('、')[0]) + '」，每周至少 3 篇，连续 4 周再判效果。');
+    } else {
+      items.push('<b>关键词卡位</b>：把品牌词 + 品类词埋进笔记标题和正文，搜索流量比推荐流量更留人。');
+      items.push('<b>内容节奏</b>：声量靠「' + esc(top.form.split('、')[0]) + '」铺量，同一卖点换 3 种表达反复测。');
+    }
+    items.push('<b>复盘</b>：' + (o.rows.length > 1 ? '每 2 周按等边际原则重新分配一次预算，砍掉边际回报最低的品类。' : '每 2 周复算一次 ROI，连续 2 期 ROI<1 就降预算。'));
+    items.push('<b>风控</b>：' + esc(top.name) + '退货率约 ' + Math.round(top.ret * 100) + '%，详情页和话术先管住预期（尺寸 / 成分 / 效果写清楚）。');
+    return '<ul class="todo">' + items.map(function (t) {
+      return '<li><span class="ck">✓</span><span>' + t + '</span></li>';
+    }).join('') + '</ul>';
+  }
+  function renderRisk(o) {
+    var pos = o.goal === 'sell' ? clamp((o.roi / 2.5) * 100, 3, 97) : clamp(o.risk === '低' ? 15 : o.risk === '中' ? 50 : 85, 3, 97);
+    var label = o.goal === 'sell'
+      ? ('风险等级：' + o.risk + '。主要敏感项：' + (o.risk === '高' ? '竞争强度和内容饱和度都高，转化稍掉 ROI 就破 1。' : '参数中等，抗波动能力一般。'))
+      : ('内容易沉风险：' + o.risk + '（品类内容饱和度决定）。');
+    return '<div class="sens-bar"><span class="pin" style="left:' + pos + '%"></span></div>' +
+      '<div class="plain">' + esc(label) + ' 预算、转化率、客单价任意一项波动 ±20%，结论可能反转——改上面的输入立刻能看到。</div>';
+  }
+
+  function render() {
+    var o = compute();
+    var out = $('output');
+    if (!o) {
+      out.innerHTML = '<div class="out-empty">选至少 1 个候选品类、填个正经预算（≥ ¥100），策略书马上出来。</div>';
+      renderTrace(null); return;
+    }
+    var html = renderVerdict(o);
+    html += '<div class="out-grid">';
+    html += '<div class="out-card"><h3><span class="tagmini">推荐品类</span>候选对比（按综合分）</h3>' + renderCompare(o) + '</div>';
+    html += '<div class="out-card"><h3><span class="tagmini">预算分配</span>等边际原则 · ' + o.rows.length + ' 个品类</h3>' + renderAlloc(o) + '</div>';
+    if (o.goal === 'sell') {
+      html += '<div class="out-card"><h3><span class="tagmini">定价区间</span>' + esc(o.top.cat.name) + '（带货口径）</h3>' + renderPricing(o) + '</div>';
+    } else {
+      html += '<div class="out-card"><h3><span class="tagmini">转化路径</span>' + (o.goal === 'fans' ? '涨粉成本账（引流口径）' : '声量成本账（品牌口径）') + '</h3>' + renderBenchmark(o) + '</div>';
+    }
+    html += '<div class="out-card"><h3><span class="tagmini">预期 ROI</span>预估账本 · 每行配大白话</h3>' + renderFunnel(o) + renderRisk(o) + '</div>';
+    html += '<div class="out-card wide"><h3><span class="tagmini">行动清单</span>照着做就行</h3>' + renderTodo(o) + '</div>';
+    html += '</div>';
+    out.innerHTML = html;
+    renderTrace(o);
+  }
+
+  /* ---------- 计算过程透明化 ---------- */
+  function renderTrace(o) {
+    var el = $('calcTrace');
+    if (!el) return;
+    if (!o) { el.innerHTML = '等输入完整后这里会展示每一步中间值。'; return; }
+    var lines = [];
+    lines.push('<div class="trace-line">1) 目标口径：' + (o.goal === 'sell' ? '带货（每元推广的毛利回报）' : o.goal === 'fans' ? '引流（每元推广的涨粉回报）' : '品牌（每元推广的声量回报）') + '，月预算 ¥' + fmtWan(o.budget) + '</div>');
+    o.rows.forEach(function (r, i) {
+      lines.push('<div class="trace-line">2.' + (i + 1) + ') ' + esc(r.cat.name) + '：边际回报 q=<b>' + r.q.toFixed(2) + '</b>（基准 ' + r.cat.q + ' × 目标适配），容量 cap=¥' + fmtWan(r.cat.cap) + ' → 分到预算 ¥' + fmtWan(r.b) + '（' + Math.round(r.b / o.budget * 100) + '%）</div>');
+    });
+    lines.push('<div class="trace-line">3) 先给每个品类保底 12% 探索预算，其余按等边际解：λ = <b>' + (o.lambda || 0).toFixed(2) + '</b>（每个品类再投 1 元的回报已拉平）</div>');
+    o.rows.forEach(function (r, i) {
+      lines.push('<div class="trace-line">4.' + (i + 1) + ') ' + esc(r.cat.name) + ' 回报 = cap × q × ln(1 + b/cap) = ¥' + fmtWan(r.value) + '</div>');
+    });
+    lines.push('<div class="trace-line">5) 总回报 ¥' + fmtWan(o.rows.reduce(function (a, r) { return a + r.value; }, 0)) + ' ÷ 预算 ¥' + fmtWan(o.budget) + ' = <b>ROI ' + o.roi.toFixed(2) + '</b>' + (o.goal === 'sell' ? ' → ' + esc(o.payback) : '') + '</div>');
+    el.innerHTML = lines.join('');
+  }
+
+  function renderDbTable() {
+    if (!$('dbTable')) return;
+    var h = '<tr><th>品类</th><th>需求热度</th><th>竞争强度</th><th>内容饱和</th><th>基准回报</th><th>月容量</th><th>中位价</th><th>毛利率</th><th>扣点</th><th>成交转化</th><th>退货率</th><th>价格敏感</th></tr>';
+    DB.forEach(function (c) {
+      h += '<tr><td>' + c.name + '</td><td>' + c.heat + '</td><td>' + c.comp + '</td><td>' + c.sat + '</td><td>' + c.q.toFixed(1) + '</td><td>¥' + fmtWan(c.cap) + '</td><td>¥' + c.price + '</td><td>' + Math.round(c.margin * 100) + '%</td><td>' + Math.round(c.fee * 100) + '%</td><td>' + (c.cvr * 100).toFixed(1) + '%</td><td>' + Math.round(c.ret * 100) + '%</td><td>ε=' + c.sens + '</td></tr>';
+    });
+    $('dbTable').innerHTML = h;
+  }
+
+  /* ---------- 输入层交互 ---------- */
+  function buildChips() {
+    var g = $('catGrid');
+    g.innerHTML = '';
+    DB.forEach(function (c) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip' + (state.cats.indexOf(c.name) >= 0 ? ' on' : '');
+      b.dataset.name = c.name;
+      b.dataset.red = c.comp >= 9 ? '1' : '0';
+      b.innerHTML = '<span class="dot"></span>' + esc(c.name);
+      b.addEventListener('click', function () {
+        var i = state.cats.indexOf(c.name);
+        if (i >= 0) {
+          if (state.cats.length <= 1) return; // 至少留 1 个
+          state.cats.splice(i, 1);
+        } else {
+          if (state.cats.length >= 4) return; // 最多 4 个
+          state.cats.push(c.name);
+        }
+        buildChips(); render();
+      });
+      g.appendChild(b);
+    });
+    var hint = document.createElement('span');
+    hint.className = 'chip-count';
+    hint.textContent = '已选 ' + state.cats.length + ' / 4';
+    g.appendChild(hint);
+  }
+
+  function bind() {
+    $('f_budget').addEventListener('input', function () {
+      state.budget = parseFloat(this.value) || 0;
+      var v = Math.round(state.budget);
+      document.querySelectorAll('.preset').forEach(function (p) {
+        p.classList.toggle('on', parseInt(p.dataset.v, 10) === v);
+      });
+      render();
+    });
+    document.querySelectorAll('.preset').forEach(function (p) {
+      p.addEventListener('click', function () {
+        $('f_budget').value = p.dataset.v;
+        state.budget = parseInt(p.dataset.v, 10);
+        document.querySelectorAll('.preset').forEach(function (x) { x.classList.toggle('on', x === p); });
+        render();
+      });
+    });
+    document.querySelectorAll('#goalSeg .seg-btn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('#goalSeg .seg-btn').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        state.goal = b.dataset.goal;
+        $('goalNote').textContent = GOAL_NOTE[state.goal];
+        render();
+      });
+    });
+  }
+
+  renderDbTable();
+  buildChips();
+  bind();
+  render();
+})();
+</script>
+</body>
+</html>
